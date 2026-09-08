@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/livetranscript.tsx","./src/components/recordercontrols.tsx","./src/hooks/usespeechrecognition.ts","./src/types/index.ts","./src/types/speech.d.ts"],"errors":true,"version":"5.9.3"}
