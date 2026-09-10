@@ -1,0 +1,113 @@
+import type { ProviderId, ProviderMeta } from './types';
+
+/** Pure data — no SDK imports, so the settings UI can render without loading any adapter. */
+export const PROVIDER_META: Record<ProviderId, ProviderMeta> = {
+  gemini: {
+    id: 'gemini',
+    label: 'Google Gemini',
+    cost: 'free',
+    costNote: '무료 · 신용카드 불필요',
+    apiKeyUrl: 'https://aistudio.google.com/apikey',
+    keyHint: '보통 "AIza…"로 시작하는 긴 문자열',
+    steps: [
+      'aistudio.google.com/apikey 페이지를 엽니다.',
+      'Google 계정으로 로그인합니다.',
+      '"API 키 만들기(Create API key)" 버튼을 클릭합니다.',
+      '생성된 키를 복사합니다.',
+      '아래 입력란에 붙여넣습니다.',
+    ],
+    defaultModel: 'gemini-3.6-flash',
+  },
+  anthropic: {
+    id: 'anthropic',
+    label: 'Anthropic Claude',
+    cost: 'paid',
+    costNote: '유료 · 최소 $5 충전 필요 · 번역 품질이 가장 좋은 편',
+    apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+    keyHint: '"sk-ant-…"로 시작',
+    steps: [
+      'console.anthropic.com 에 접속해 가입/로그인합니다.',
+      '왼쪽 메뉴에서 Settings → API keys 로 이동합니다.',
+      '"Create Key"를 눌러 키를 만들고 이름을 정합니다.',
+      '생성된 키(sk-ant-…)를 복사합니다. 이 화면을 벗어나면 다시 볼 수 없습니다.',
+      '결제 정보가 없으면 Billing 메뉴에서 최소 $5를 충전합니다.',
+      '아래 입력란에 붙여넣습니다.',
+    ],
+    defaultModel: 'claude-haiku-4-5',
+  },
+  openai: {
+    id: 'openai',
+    label: 'OpenAI',
+    cost: 'paid',
+    costNote: '유료 · 사용량 기반 결제',
+    apiKeyUrl: 'https://platform.openai.com/api-keys',
+    keyHint: '"sk-…"로 시작',
+    steps: [
+      'platform.openai.com/api-keys 에 접속해 로그인합니다.',
+      '"Create new secret key"를 클릭합니다.',
+      '생성된 키를 복사합니다. 이 화면을 벗어나면 다시 볼 수 없습니다.',
+      'Billing 메뉴에서 결제 수단을 등록하고 크레딧을 충전합니다.',
+      '아래 입력란에 붙여넣습니다.',
+    ],
+    defaultModel: 'gpt-4o-mini',
+  },
+  groq: {
+    id: 'groq',
+    label: 'Groq',
+    cost: 'free',
+    costNote: '무료 티어 · 매우 빠름 · 한국어 번역 품질은 다소 낮음',
+    apiKeyUrl: 'https://console.groq.com/keys',
+    keyHint: '"gsk_…"로 시작',
+    steps: [
+      'console.groq.com 에 접속해 가입/로그인합니다.',
+      '왼쪽 메뉴에서 API Keys 로 이동합니다.',
+      '"Create API Key"를 클릭하고 이름을 정합니다.',
+      '생성된 키(gsk_…)를 복사합니다.',
+      '아래 입력란에 붙여넣습니다.',
+    ],
+    defaultModel: 'llama-3.3-70b-versatile',
+  },
+  openrouter: {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    cost: 'paid',
+    costNote: '키 하나로 여러 모델 · 무료 모델(":free")도 있음 · 크레딧 충전형',
+    apiKeyUrl: 'https://openrouter.ai/keys',
+    keyHint: '"sk-or-…"로 시작',
+    steps: [
+      'openrouter.ai 에 접속해 가입/로그인합니다.',
+      '오른쪽 위 프로필 → Keys 로 이동합니다.',
+      '"Create Key"를 클릭합니다.',
+      '생성된 키(sk-or-…)를 복사합니다.',
+      '무료 모델만 쓸 거면 충전 없이도 됩니다. 유료 모델은 Credits에서 충전하세요.',
+      '아래 입력란에 붙여넣습니다. 고급 설정에서 모델명 예: "openai/gpt-4o-mini", "google/gemini-2.0-flash-exp:free"',
+    ],
+    defaultModel: 'openai/gpt-4o-mini',
+  },
+  mistral: {
+    id: 'mistral',
+    label: 'Mistral',
+    cost: 'free',
+    costNote: '무료 티어 있음(La Plateforme) · 유럽 기반',
+    apiKeyUrl: 'https://console.mistral.ai/api-keys',
+    keyHint: '영문/숫자 조합 문자열',
+    steps: [
+      'console.mistral.ai 에 접속해 가입/로그인합니다.',
+      'API Keys 메뉴로 이동합니다.',
+      '"Create new key"를 클릭합니다.',
+      '생성된 키를 복사합니다.',
+      '아래 입력란에 붙여넣습니다.',
+    ],
+    defaultModel: 'mistral-small-latest',
+  },
+};
+
+/** Display order in the settings panel. */
+export const PROVIDER_META_LIST: ProviderMeta[] = [
+  PROVIDER_META.gemini,
+  PROVIDER_META.groq,
+  PROVIDER_META.mistral,
+  PROVIDER_META.openrouter,
+  PROVIDER_META.openai,
+  PROVIDER_META.anthropic,
+];

@@ -5,30 +5,47 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7fcf074f-06ab-41a1-9177-23d846eb028d" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.ai/mcp/mcp.json" beforeDir="false" afterPath="$PROJECT_DIR$/.ai/mcp/mcp.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/LiveTranscript.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/LiveTranscript.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/RecorderControls.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/RecorderControls.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hooks/useSpeechRecognition.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/hooks/useSpeechRecognition.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.node.tsbuildinfo" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.tsbuildinfo" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/vite.config.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/Users/Jaehyun Byun/Desktop/recorderLecture" value="3J53CX3zeD9K0zq2n5ZyiXQNOsv" />
+    </persistenceIdMap>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "Jaehyun-Byun"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Jaehyun-Byun&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Jaehyun-Byun/recorderLecture.git",
-    "accountId": "85416474-6989-473d-b76f-8c2d08bcbe1f"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Jaehyun-Byun/recorderLecture.git&quot;,
+    &quot;accountId&quot;: &quot;85416474-6989-473d-b76f-8c2d08bcbe1f&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls>
@@ -41,33 +58,93 @@
       </McpServerConfigurationProperties>
     </urls>
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 6,
-  "fromUser": false
-}]]></component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="0.004012562058178666" />
+      <entry key="MS500" value="0.6527118428895883" />
+      <entry key="S2" value="4.079709233074586" />
+      <entry key="S5" value="8.06111539806336" />
+      <entry key="S10" value="10.520892313179557" />
+      <entry key="S30" value="12.701548329984677" />
+      <entry key="S60" value="13.33153135631009" />
+      <entry key="M2" value="13.660799193235881" />
+      <entry key="M5" value="13.863107176670592" />
+      <entry key="M10" value="13.931349890352852" />
+      <entry key="M15" value="13.954250178551325" />
+      <entry key="M30" value="14.008674611457307" />
+      <entry key="H1" value="14.699624477953387" />
+      <entry key="H2" value="17.367320435603407" />
+      <entry key="H4" value="21.34348491635204" />
+      <entry key="D1" value="28.05283171870614" />
+      <entry key="W1" value="29.706135073261724" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0" />
+      <entry key="S2" value="1.0" />
+      <entry key="S5" value="1.0" />
+      <entry key="S10" value="1.0" />
+      <entry key="S30" value="1.0" />
+      <entry key="S60" value="1.0" />
+      <entry key="M2" value="1.0" />
+      <entry key="M5" value="1.0" />
+      <entry key="M10" value="1.0" />
+      <entry key="M15" value="1.0" />
+      <entry key="M30" value="1.0" />
+      <entry key="H1" value="1.0" />
+      <entry key="H2" value="1.0" />
+      <entry key="H4" value="1.0" />
+      <entry key="D1" value="1.0" />
+      <entry key="W1" value="1.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.016011878180961125" />
+      <entry key="MS500" value="1.0383581202751075" />
+      <entry key="S2" value="4.823328519273144" />
+      <entry key="S5" value="8.925393943003405" />
+      <entry key="S10" value="11.443512983630578" />
+      <entry key="S30" value="13.673032436851871" />
+      <entry key="S60" value="14.316886414113393" />
+      <entry key="M2" value="14.653376090958012" />
+      <entry key="M5" value="14.860113269859179" />
+      <entry key="M10" value="14.929848782336343" />
+      <entry key="M15" value="14.953248509983121" />
+      <entry key="M30" value="15.008172455402484" />
+      <entry key="H1" value="15.699364044419125" />
+      <entry key="H2" value="18.367172091218457" />
+      <entry key="H4" value="22.343397229501644" />
+      <entry key="D1" value="29.052813303074036" />
+      <entry key="W1" value="30.706132308642104" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6,
+  &quot;fromUser&quot;: false
+}</component>
   <component name="ProjectId" id="3J28eE1obJy75nYs9sRap2tCh0E" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "javascript.preferred.runtime.type.id": "node",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "reference.settings.ide.settings.file-colors"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;copilot.chat.legacySessionMetadata.migrated&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.ide.settings.file-colors&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -84,6 +161,10 @@
       <updated>1788843638124</updated>
       <workItem from="1788843647623" duration="120000" />
       <workItem from="1788847897471" duration="3160000" />
+      <workItem from="1788852353220" duration="2950000" />
+      <workItem from="1788855351171" duration="5009000" />
+      <workItem from="1788915764588" duration="7659000" />
+      <workItem from="1789001772122" duration="1959000" />
     </task>
     <servers />
   </component>

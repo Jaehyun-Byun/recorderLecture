@@ -3,15 +3,17 @@ import type { SpeechError } from '../types';
 interface RecorderControlsProps {
   isSupported: boolean;
   isListening: boolean;
+  isReconnecting: boolean;
   error: SpeechError | null;
   onStart: () => void;
   onStop: () => void;
 }
 
-/** Start/stop button, a "listening" indicator, and the error banner. */
+/** Start/stop button, a listening / reconnecting indicator, and the error banner. */
 export function RecorderControls({
   isSupported,
   isListening,
+  isReconnecting,
   error,
   onStart,
   onStop,
@@ -33,7 +35,14 @@ export function RecorderControls({
           {isListening ? '중지' : '시작'}
         </button>
 
-        {isListening && (
+        {isListening && isReconnecting && (
+          <span className="flex items-center gap-2 text-sm text-amber-600">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-amber-500" />
+            음성 인식 재연결 중…
+          </span>
+        )}
+
+        {isListening && !isReconnecting && (
           <span className="flex items-center gap-2 text-sm text-red-600">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" />
             듣는 중…
