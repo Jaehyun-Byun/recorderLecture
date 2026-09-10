@@ -8,20 +8,6 @@ export type ProviderId =
   | 'openrouter'
   | 'mistral';
 
-export interface RefineResult {
-  corrected: string;
-  translated: string;
-}
-
-export interface ProviderRefineArgs {
-  apiKey: string;
-  model: string;
-  text: string;
-  signal: AbortSignal;
-}
-
-export type ProviderRefineFn = (args: ProviderRefineArgs) => Promise<RefineResult>;
-
 export type ProviderErrorKind =
   | 'auth' // bad/missing key, no credit, forbidden
   | 'rate-limit' // quota / too many requests
@@ -38,6 +24,20 @@ export class ProviderError extends Error {
     this.kind = kind;
   }
 }
+
+export interface ProviderChatArgs {
+  apiKey: string;
+  model: string;
+  system: string;
+  user: string;
+  maxTokens: number;
+  signal: AbortSignal;
+  /** Required string keys the model must return as a JSON object. */
+  jsonKeys: string[];
+}
+
+/** A single structured-JSON chat turn. Returns the raw JSON string. */
+export type ProviderChatFn = (args: ProviderChatArgs) => Promise<string>;
 
 /** Static description of a provider — no SDK imports, safe to load eagerly. */
 export interface ProviderMeta {
@@ -58,5 +58,5 @@ export interface ProviderMeta {
 
 export interface ProviderEntry extends ProviderMeta {
   /** Dynamically imports the adapter (keeps provider SDKs out of the initial bundle). */
-  loadRefine: () => Promise<ProviderRefineFn>;
+  loadChat: () => Promise<ProviderChatFn>;
 }

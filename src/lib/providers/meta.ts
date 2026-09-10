@@ -6,7 +6,7 @@ export const PROVIDER_META: Record<ProviderId, ProviderMeta> = {
     id: 'gemini',
     label: 'Google Gemini',
     cost: 'free',
-    costNote: '무료 · 신용카드 불필요',
+    costNote: '무료 · 신용카드 불필요 · 무료 한도가 낮음(모델별 하루 수십 회) → 문단 모드 필수, 긴 강의는 Groq 권장',
     apiKeyUrl: 'https://aistudio.google.com/apikey',
     keyHint: '보통 "AIza…"로 시작하는 긴 문자열',
     steps: [
@@ -55,7 +55,7 @@ export const PROVIDER_META: Record<ProviderId, ProviderMeta> = {
     id: 'groq',
     label: 'Groq',
     cost: 'free',
-    costNote: '무료 티어 · 매우 빠름 · 한국어 번역 품질은 다소 낮음',
+    costNote: '무료 티어 · 매우 빠름 · 무료 한도가 넉넉함 · 한국어 번역 품질은 다소 낮음',
     apiKeyUrl: 'https://console.groq.com/keys',
     keyHint: '"gsk_…"로 시작',
     steps: [
@@ -102,12 +102,12 @@ export const PROVIDER_META: Record<ProviderId, ProviderMeta> = {
   },
 };
 
-/** Display order in the settings panel. */
+/** Display order in the settings panel: free first, then Claude, then other paid. */
 export const PROVIDER_META_LIST: ProviderMeta[] = [
   PROVIDER_META.gemini,
   PROVIDER_META.groq,
   PROVIDER_META.mistral,
+  PROVIDER_META.anthropic,
   PROVIDER_META.openrouter,
   PROVIDER_META.openai,
-  PROVIDER_META.anthropic,
 ];

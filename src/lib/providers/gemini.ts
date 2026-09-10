@@ -1,10 +1,5 @@
 import { ApiError, GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
-import { SYSTEM_PROMPT, parseRefineResult } from './prompt';
-import {
-  ProviderError,
-  type ProviderRefineArgs,
-  type RefineResult,
-} from './types';
+import { ProviderError, type ProviderChatArgs } from './types';
 
 function statusOf(err: unknown): number | undefined {
   if (err instanceof ApiError && typeof err.status === 'number') return err.status;
@@ -15,33 +10,36 @@ function statusOf(err: unknown): number | undefined {
   return undefined;
 }
 
-export async function geminiRefine({
+export async function geminiChat({
   apiKey,
   model,
-  text,
+  system,
+  user,
+  maxTokens,
   signal,
-}: ProviderRefineArgs): Promise<RefineResult> {
+  jsonKeys,
+}: ProviderChatArgs): Promise<string> {
   const ai = new GoogleGenAI({ apiKey });
+
+  const properties: Record<string, { type: Type }> = {};
+  for (const key of jsonKeys) properties[key] = { type: Type.STRING };
 
   let response;
   try {
     response = await ai.models.generateContent({
       model,
-      contents: text,
+      contents: user,
       config: {
         abortSignal: signal,
-        systemInstruction: SYSTEM_PROMPT,
+        systemInstruction: system,
         temperature: 0.2,
-        maxOutputTokens: 2048,
+        maxOutputTokens: maxTokens,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
-          properties: {
-            corrected: { type: Type.STRING },
-            translated: { type: Type.STRING },
-          },
-          required: ['corrected', 'translated'],
-          propertyOrdering: ['corrected', 'translated'],
+          properties,
+          required: jsonKeys,
+          propertyOrdering: jsonKeys,
         },
         thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
       },
@@ -76,5 +74,5 @@ export async function geminiRefine({
   if (response.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
     throw new ProviderError('truncated', 'AI 응답이 최대 길이에 도달해 잘렸습니다.');
   }
-  return parseRefineResult(response.text ?? '');
+  return response.text ?? '';
 }

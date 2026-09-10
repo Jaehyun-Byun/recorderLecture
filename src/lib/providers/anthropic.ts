@@ -1,9 +1,4 @@
-import { SYSTEM_PROMPT, parseRefineResult } from './prompt';
-import {
-  ProviderError,
-  type ProviderRefineArgs,
-  type RefineResult,
-} from './types';
+import { ProviderError, type ProviderChatArgs } from './types';
 
 const MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -51,12 +46,18 @@ async function mapHttpError(res: Response): Promise<ProviderError> {
   );
 }
 
-export async function anthropicRefine({
+export async function anthropicChat({
   apiKey,
   model,
-  text,
+  system,
+  user,
+  maxTokens,
   signal,
-}: ProviderRefineArgs): Promise<RefineResult> {
+  jsonKeys,
+}: ProviderChatArgs): Promise<string> {
+  const properties: Record<string, { type: 'string' }> = {};
+  for (const key of jsonKeys) properties[key] = { type: 'string' };
+
   const res = await fetch(MESSAGES_URL, {
     method: 'POST',
     signal,
@@ -68,28 +69,17 @@ export async function anthropicRefine({
     },
     body: JSON.stringify({
       model,
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      max_tokens: maxTokens,
+      system,
       tools: [
         {
-          name: 'provide_refinement',
-          description:
-            'Return the cleaned-up English sentence and its Korean (한국어) translation.',
-          input_schema: {
-            type: 'object',
-            properties: {
-              corrected: { type: 'string', description: 'The cleaned-up English sentence.' },
-              translated: {
-                type: 'string',
-                description: 'Natural Korean (한국어) translation of the corrected sentence.',
-              },
-            },
-            required: ['corrected', 'translated'],
-          },
+          name: 'provide_result',
+          description: 'Return the structured JSON result.',
+          input_schema: { type: 'object', properties, required: jsonKeys },
         },
       ],
-      tool_choice: { type: 'tool', name: 'provide_refinement' },
-      messages: [{ role: 'user', content: text }],
+      tool_choice: { type: 'tool', name: 'provide_result' },
+      messages: [{ role: 'user', content: user }],
     }),
   });
 
@@ -103,8 +93,8 @@ export async function anthropicRefine({
   }
 
   const toolUse = data?.content?.find((block) => block.type === 'tool_use');
-  if (!toolUse) {
+  if (!toolUse || toolUse.input === undefined) {
     throw new ProviderError('bad-response', 'Claude가 예상한 형식으로 응답하지 않았습니다.');
   }
-  return parseRefineResult(toolUse.input);
+  return JSON.stringify(toolUse.input);
 }

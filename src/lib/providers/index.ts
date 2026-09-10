@@ -2,34 +2,34 @@ import { PROVIDER_META, PROVIDER_META_LIST } from './meta';
 import type { ProviderEntry, ProviderId } from './types';
 
 /**
- * Registry: static metadata + a lazy loader for each adapter. The provider SDKs
- * (notably @google/genai) only enter the bundle when a refine actually runs.
- * OpenAI / Groq / OpenRouter / Mistral all share one OpenAI-compatible adapter.
+ * Registry: static metadata + a lazy loader for each adapter. Provider SDKs
+ * (notably @google/genai) only enter the bundle when a call actually runs.
+ * OpenAI / Groq / OpenRouter / Mistral share one OpenAI-compatible adapter.
  */
 export const PROVIDERS: Record<ProviderId, ProviderEntry> = {
   gemini: {
     ...PROVIDER_META.gemini,
-    loadRefine: () => import('./gemini').then((m) => m.geminiRefine),
+    loadChat: () => import('./gemini').then((m) => m.geminiChat),
   },
   anthropic: {
     ...PROVIDER_META.anthropic,
-    loadRefine: () => import('./anthropic').then((m) => m.anthropicRefine),
+    loadChat: () => import('./anthropic').then((m) => m.anthropicChat),
   },
   openai: {
     ...PROVIDER_META.openai,
-    loadRefine: () => import('./openai-compat').then((m) => m.openaiRefine),
+    loadChat: () => import('./openai-compat').then((m) => m.openaiChat),
   },
   groq: {
     ...PROVIDER_META.groq,
-    loadRefine: () => import('./openai-compat').then((m) => m.groqRefine),
+    loadChat: () => import('./openai-compat').then((m) => m.groqChat),
   },
   openrouter: {
     ...PROVIDER_META.openrouter,
-    loadRefine: () => import('./openai-compat').then((m) => m.openrouterRefine),
+    loadChat: () => import('./openai-compat').then((m) => m.openrouterChat),
   },
   mistral: {
     ...PROVIDER_META.mistral,
-    loadRefine: () => import('./openai-compat').then((m) => m.mistralRefine),
+    loadChat: () => import('./openai-compat').then((m) => m.mistralChat),
   },
 };
 

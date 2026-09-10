@@ -1,5 +1,11 @@
-import { PROVIDERS, ProviderError, type RefineResult } from './providers';
+import { PROVIDERS, ProviderError } from './providers';
 import { PROVIDER_META } from './providers/meta';
+import {
+  PARAGRAPH_SYSTEM_PROMPT,
+  buildParagraphUser,
+  parseRefineParagraph,
+  type RefineParagraphRaw,
+} from './providers/prompt';
 import { resolveActive, type Settings } from './settings';
 
 /** Why a refine call failed — the queue uses this to decide whether to retry. */
@@ -22,7 +28,8 @@ export class RefineError extends Error {
   }
 }
 
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 60_000; // big paragraphs — allow plenty of time
+const JSON_KEYS = ['corrected', 'translated', 'glossary', 'notes'];
 
 const KIND_TO_REASON: Record<ProviderError['kind'], RefineErrorReason> = {
   auth: 'auth',
@@ -32,22 +39,55 @@ const KIND_TO_REASON: Record<ProviderError['kind'], RefineErrorReason> = {
   unknown: 'unknown',
 };
 
-/** Sends one sentence to the selected provider for cleanup + Korean translation. */
-export async function refineSentence(
-  text: string,
-  settings: Settings,
-): Promise<RefineResult> {
-  const { apiKey, model, providerId, hasKey } = resolveActive(settings);
+export interface RefineParagraphInput {
+  newParagraph: string;
+  /** Serialized running glossary ("en = ko ; ..."), empty on the first call. */
+  glossary: string;
+  /** Rolling notes on topic/tone, empty on the first call. */
+  notes: string;
+  /** The last corrected paragraph(s) joined, empty on the first call. */
+  recentCorrected: string;
+  settings: Settings;
+}
+
+/** Output tokens track input size — Korean is heavy, so ~1.5x chars, clamped. */
+function maxTokensFor(chars: number): number {
+  return Math.min(6144, Math.max(1024, Math.ceil(chars * 1.6)));
+}
+
+export async function refineParagraph(
+  input: RefineParagraphInput,
+): Promise<RefineParagraphRaw> {
+  const { apiKey, model, providerId, hasKey } = resolveActive(input.settings);
   if (!hasKey) {
-    const label = PROVIDER_META[providerId].label;
-    throw new RefineError('no-key', `${label} API 키가 없습니다. 설정에서 입력하세요.`);
+    throw new RefineError(
+      'no-key',
+      `${PROVIDER_META[providerId].label} API 키가 없습니다. 설정에서 입력하세요.`,
+    );
   }
+
+  const user = buildParagraphUser(
+    input.glossary,
+    input.notes,
+    input.recentCorrected,
+    input.newParagraph,
+  );
+  const maxTokens = maxTokensFor(user.length);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const refine = await PROVIDERS[providerId].loadRefine();
-    return await refine({ apiKey, model, text, signal: controller.signal });
+    const chat = await PROVIDERS[providerId].loadChat();
+    const raw = await chat({
+      apiKey,
+      model,
+      system: PARAGRAPH_SYSTEM_PROMPT,
+      user,
+      maxTokens,
+      signal: controller.signal,
+      jsonKeys: JSON_KEYS,
+    });
+    return parseRefineParagraph(raw);
   } catch (err) {
     if (err instanceof ProviderError) {
       throw new RefineError(KIND_TO_REASON[err.kind], err.message);
@@ -64,12 +104,18 @@ export async function refineSentence(
   }
 }
 
-/** Backs the "연결 테스트" button in the settings panel. */
+/** Backs the "연결 테스트" button. */
 export async function testConnection(
   settings: Settings,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   try {
-    await refineSentence('This is a connection test.', settings);
+    await refineParagraph({
+      newParagraph: 'so um this is a quick connection test you know',
+      glossary: '',
+      notes: '',
+      recentCorrected: '',
+      settings,
+    });
     return { ok: true };
   } catch (err) {
     return {

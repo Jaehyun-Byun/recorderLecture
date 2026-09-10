@@ -1,15 +1,8 @@
-import { SYSTEM_PROMPT, parseRefineResult } from './prompt';
-import {
-  ProviderError,
-  type ProviderRefineArgs,
-  type ProviderRefineFn,
-  type RefineResult,
-} from './types';
+import { ProviderError, type ProviderChatArgs, type ProviderChatFn } from './types';
 
 /**
  * One adapter for every OpenAI-compatible `/chat/completions` API
- * (OpenAI, Groq, OpenRouter, Mistral, …). They all accept the same request
- * shape and are CORS-enabled for direct browser calls.
+ * (OpenAI, Groq, OpenRouter, Mistral, …). Same request shape, all CORS-enabled.
  */
 interface OpenAiCompatConfig {
   baseUrl: string; // e.g. https://api.openai.com/v1
@@ -35,13 +28,15 @@ function errorMessageOf(body: ChatErrorBody | null): string | undefined {
   return body.error?.message;
 }
 
-export function makeOpenAiCompatRefine(config: OpenAiCompatConfig): ProviderRefineFn {
-  return async function refine({
+export function makeOpenAiCompatChat(config: OpenAiCompatConfig): ProviderChatFn {
+  return async function chat({
     apiKey,
     model,
-    text,
+    system,
+    user,
+    maxTokens,
     signal,
-  }: ProviderRefineArgs): Promise<RefineResult> {
+  }: ProviderChatArgs): Promise<string> {
     const res = await fetch(`${config.baseUrl}/chat/completions`, {
       method: 'POST',
       signal,
@@ -53,11 +48,11 @@ export function makeOpenAiCompatRefine(config: OpenAiCompatConfig): ProviderRefi
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: text },
+          { role: 'system', content: system },
+          { role: 'user', content: user },
         ],
         temperature: 0.2,
-        max_tokens: 1024,
+        max_tokens: maxTokens,
         response_format: { type: 'json_object' },
       }),
     });
@@ -66,10 +61,7 @@ export function makeOpenAiCompatRefine(config: OpenAiCompatConfig): ProviderRefi
       const body = (await res.json().catch(() => null)) as ChatErrorBody | null;
       const apiMessage = errorMessageOf(body);
       if (res.status === 401 || res.status === 403) {
-        throw new ProviderError(
-          'auth',
-          `${config.label} API 키가 유효하지 않습니다.`,
-        );
+        throw new ProviderError('auth', `${config.label} API 키가 유효하지 않습니다.`);
       }
       if (
         res.status === 402 ||
@@ -94,30 +86,31 @@ export function makeOpenAiCompatRefine(config: OpenAiCompatConfig): ProviderRefi
     if (choice?.finish_reason === 'length') {
       throw new ProviderError('truncated', 'AI 응답이 최대 길이에 도달해 잘렸습니다.');
     }
-    return parseRefineResult(choice?.message?.content ?? '');
+    return choice?.message?.content ?? '';
   };
 }
 
-export const openaiRefine = makeOpenAiCompatRefine({
+export const openaiChat = makeOpenAiCompatChat({
   baseUrl: 'https://api.openai.com/v1',
   label: 'OpenAI',
 });
 
-export const groqRefine = makeOpenAiCompatRefine({
+export const groqChat = makeOpenAiCompatChat({
   baseUrl: 'https://api.groq.com/openai/v1',
   label: 'Groq',
 });
 
-export const openrouterRefine = makeOpenAiCompatRefine({
+export const openrouterChat = makeOpenAiCompatChat({
   baseUrl: 'https://openrouter.ai/api/v1',
   label: 'OpenRouter',
   extraHeaders: () => ({
-    'HTTP-Referer': typeof location !== 'undefined' ? location.origin : 'https://lecturecaption.app',
+    'HTTP-Referer':
+      typeof location !== 'undefined' ? location.origin : 'https://lecturecaption.app',
     'X-Title': 'LectureCaption',
   }),
 });
 
-export const mistralRefine = makeOpenAiCompatRefine({
+export const mistralChat = makeOpenAiCompatChat({
   baseUrl: 'https://api.mistral.ai/v1',
   label: 'Mistral',
 });

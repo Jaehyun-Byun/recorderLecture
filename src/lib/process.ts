@@ -1,11 +1,17 @@
-import { RefineError, refineSentence } from './refine';
+import {
+  RefineError,
+  refineParagraph,
+  type RefineParagraphInput,
+} from './refine';
+import type { RefineParagraphRaw } from './providers/prompt';
 import type { Settings } from './settings';
 import { TranslatorError, translateToKorean } from './translator';
 
-export interface ProcessResult {
-  corrected: string | null;
+export interface SentenceResult {
   translated: string | null;
 }
+
+export type ParagraphResult = RefineParagraphRaw;
 
 export class ProcessError extends Error {
   /** Whether an immediate automatic retry is worth trying. */
@@ -17,41 +23,37 @@ export class ProcessError extends Error {
   }
 }
 
-/**
- * Runs one finalized sentence through whatever the current mode requires:
- * - transcribe → nothing
- * - translate  → browser on-device translation
- * - refine     → the selected LLM (correction + translation in one call)
- */
+/** transcribe / translate: one sentence at a time. */
 export async function processSentence(
   text: string,
   settings: Settings,
-): Promise<ProcessResult> {
-  if (settings.mode === 'transcribe') {
-    return { corrected: null, translated: null };
-  }
-
-  if (settings.mode === 'translate') {
-    try {
-      return { corrected: null, translated: await translateToKorean(text) };
-    } catch (err) {
-      if (err instanceof TranslatorError) {
-        throw new ProcessError(err.message, err.kind === 'failed');
-      }
-      throw new ProcessError('번역에 실패했습니다.', true);
-    }
-  }
-
-  // refine
+): Promise<SentenceResult> {
+  if (settings.mode === 'transcribe') return { translated: null };
+  // translate mode
   try {
-    const result = await refineSentence(text, settings);
-    return { corrected: result.corrected, translated: result.translated };
+    return { translated: await translateToKorean(text) };
+  } catch (err) {
+    if (err instanceof TranslatorError) {
+      throw new ProcessError(err.message, err.kind === 'failed');
+    }
+    throw new ProcessError('번역에 실패했습니다.', true);
+  }
+}
+
+function refineErrorRetriable(reason: RefineError['reason']): boolean {
+  return reason === 'network' || reason === 'timeout' || reason === 'unknown';
+}
+
+/** refine mode: one paragraph at a time, carrying rolling glossary + notes. */
+export async function processParagraph(
+  input: RefineParagraphInput,
+): Promise<ParagraphResult> {
+  try {
+    return await refineParagraph(input);
   } catch (err) {
     if (err instanceof RefineError) {
-      const retriable =
-        err.reason === 'network' || err.reason === 'timeout' || err.reason === 'unknown';
-      throw new ProcessError(err.message, retriable);
+      throw new ProcessError(err.message, refineErrorRetriable(err.reason));
     }
-    throw new ProcessError('처리에 실패했습니다.', false);
+    throw new ProcessError('문단 교정에 실패했습니다.', false);
   }
 }

@@ -1,24 +1,39 @@
 interface LiveTranscriptProps {
   interimText: string;
+  /** Sentences buffered for the next paragraph (refine mode). */
+  bufferText: string;
+  bufferCount: number;
   isListening: boolean;
-  /** Whether any confirmed sentence is already on screen (rendered by SentenceList). */
-  hasSentences: boolean;
+  /** Whether any confirmed segment is already on screen (rendered by SegmentList). */
+  hasSegments: boolean;
 }
 
 /**
- * The current in-progress transcript (gray), shown under the confirmed
- * sentences. Also carries the empty-state hint. Purely presentational.
+ * Below the confirmed segments: the paragraph buffer (medium gray) then the
+ * current in-progress transcript (light gray). Also the empty-state hint.
  */
 export function LiveTranscript({
   interimText,
+  bufferText,
+  bufferCount,
   isListening,
-  hasSentences,
+  hasSegments,
 }: LiveTranscriptProps) {
-  if (interimText) {
-    return <p className="leading-relaxed text-slate-400">{interimText}</p>;
+  if (bufferText || interimText) {
+    return (
+      <div className="space-y-1 leading-relaxed">
+        {bufferText && (
+          <p className="text-slate-500">
+            <span className="mr-1 text-xs text-slate-400">모으는 중 {bufferCount}문장</span>
+            {bufferText}
+          </p>
+        )}
+        {interimText && <p className="text-slate-400">{interimText}</p>}
+      </div>
+    );
   }
 
-  if (hasSentences) return null;
+  if (hasSegments) return null;
 
   return (
     <p className="text-sm text-slate-400">

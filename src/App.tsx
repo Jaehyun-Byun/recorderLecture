@@ -1,32 +1,36 @@
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { useMicWaveform } from './hooks/useMicWaveform';
-import { useSentenceQueue } from './hooks/useSentenceQueue';
+import { useTranscript } from './hooks/useTranscript';
 import { useSettings } from './hooks/useSettings';
 import { useBrowserTranslator } from './hooks/useBrowserTranslator';
 import { RecorderControls } from './components/RecorderControls';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Waveform } from './components/Waveform';
-import { SentenceList } from './components/SentenceList';
+import { SegmentList } from './components/SegmentList';
 import { LiveTranscript } from './components/LiveTranscript';
 
 /**
- * Composition root. Wires settings → sentence queue, speech hook → queue, and
+ * Composition root. Wires settings → transcript, speech hook → transcript, and
  * everything into the presentational components.
  */
 export default function App() {
   const { settings, setMode, setProvider, setApiKey, setModel } = useSettings();
   const translator = useBrowserTranslator(settings.mode === 'translate');
-  const { sentences, enqueue, retry, retryAll } = useSentenceQueue(settings);
+  const { segments, buffer, enqueue, retry, retryAll, finalize } = useTranscript(settings);
   const { isSupported, isListening, isReconnecting, interimText, error, start, stop } =
     useSpeechRecognition({ onFinalSentence: enqueue });
   const { analyser, error: waveformError } = useMicWaveform(isListening);
 
-  const errorCount = sentences.reduce((n, s) => (s.status === 'error' ? n + 1 : n), 0);
+  const errorCount = segments.reduce((n, s) => (s.status === 'error' ? n + 1 : n), 0);
 
   const handleStart = () => {
     // Model download needs a user gesture — this click is one.
     if (settings.mode === 'translate') translator.prepare();
     start();
+  };
+  const handleStop = () => {
+    stop();
+    finalize(); // process whatever is still buffered
   };
 
   return (
@@ -55,7 +59,7 @@ export default function App() {
         isReconnecting={isReconnecting}
         error={error}
         onStart={handleStart}
-        onStop={stop}
+        onStop={handleStop}
       />
 
       <section>
@@ -78,11 +82,13 @@ export default function App() {
             </button>
           </div>
         )}
-        <SentenceList sentences={sentences} mode={settings.mode} onRetry={retry} />
+        <SegmentList segments={segments} mode={settings.mode} onRetry={retry} />
         <LiveTranscript
           interimText={interimText}
+          bufferText={buffer.text}
+          bufferCount={buffer.count}
           isListening={isListening}
-          hasSentences={sentences.length > 0}
+          hasSegments={segments.length > 0}
         />
       </main>
     </div>
