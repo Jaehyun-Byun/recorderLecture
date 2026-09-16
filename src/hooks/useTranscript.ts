@@ -14,10 +14,11 @@ import type { Segment } from '../types';
  * - transcribe: each finalized sentence → a `done` segment immediately.
  * - translate:  each sentence → one segment → browser translation (per sentence).
  * - refine:     sentences accumulate in a buffer; the buffer flushes into ONE
- *               paragraph segment (~10 sentences: 10 / 8s idle once >=8 / 90s max
- *               / stop). Paragraphs are refined **sequentially**, each carrying a
- *               rolling glossary (append-only, merged client-side so terms never
- *               drift), rolling notes, and the last two corrected paragraphs.
+ *               chunk segment (~20 sentences: 20 / 8s idle once >=15 / 3min max /
+ *               stop) that the LLM turns into Korean study notes. Chunks are
+ *               processed **sequentially**, each carrying rolling lecture memory:
+ *               an append-only glossary (merged client-side so terms never drift),
+ *               a running outline, and the previous chunk's notes.
  */
 export interface UseTranscriptResult {
   segments: Segment[];
@@ -30,14 +31,13 @@ export interface UseTranscriptResult {
   finalize: () => void;
 }
 
-// Aim for a substantial paragraph: ~10 sentences. Flush at 10, or on a pause
-// once we already have at least 8, or after a hard time cap for slow speakers.
-const MAX_SENTENCES = 10;
+// Aim for a substantial chunk: ~20 sentences. Flush at 20, or on a pause once we
+// already have at least 15, or after a hard time cap for slow speakers.
+const MAX_SENTENCES = 20;
 const IDLE_MS = 8_000;
-const IDLE_MIN_SENTENCES = 8;
-const MAX_AGE_MS = 90_000;
-const MAX_GLOSSARY_TERMS = 60;
-const RECENT_PARAGRAPHS = 2;
+const IDLE_MIN_SENTENCES = 15;
+const MAX_AGE_MS = 180_000;
+const MAX_GLOSSARY_TERMS = 80;
 const GENERIC_ERROR = '처리에 실패했습니다.';
 
 let idCounter = 0;
@@ -75,8 +75,9 @@ async function attempt<T>(fn: () => Promise<T>): Promise<Attempt<T>> {
 const newSegment = (id: string, original: string, status: Segment['status']): Segment => ({
   id,
   original,
-  corrected: null,
   translated: null,
+  notes: null,
+  concepts: null,
   status,
   errorMessage: null,
 });
@@ -101,10 +102,10 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
   const paragraphQueueRef = useRef<ParagraphItem[]>([]);
   const workingRef = useRef(false);
 
-  // Rolling lecture memory for refine mode. Advances only on a successful paragraph.
+  // Rolling lecture memory for refine mode. Advances only on a successful chunk.
   const glossaryRef = useRef<Record<string, string>>({});
-  const notesRef = useRef('');
-  const recentRef = useRef<string[]>([]);
+  const outlineRef = useRef('');
+  const recentNotesRef = useRef('');
 
   const patch = useCallback((id: string, next: Partial<Segment>) => {
     setSegments((prev) => prev.map((s) => (s.id === id ? { ...s, ...next } : s)));
@@ -126,8 +127,8 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
             processParagraph({
               newParagraph: item.original,
               glossary: serializeGlossary(glossaryRef.current),
-              notes: notesRef.current,
-              recentCorrected: recentRef.current.join('\n\n'),
+              outline: outlineRef.current,
+              recentNotes: recentNotesRef.current,
               settings: settingsRef.current,
             }),
           );
@@ -135,8 +136,8 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
             const raw = result.value;
             patch(item.id, {
               status: 'done',
-              corrected: raw.corrected,
-              translated: raw.translated,
+              notes: raw.notes,
+              concepts: raw.concepts,
             });
             // Merge glossary: append-only, keep the first Korean seen for a term.
             if (raw.glossary && raw.glossary !== '=') {
@@ -149,10 +150,8 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
                 }
               }
             }
-            if (raw.notes && raw.notes !== '=') notesRef.current = raw.notes;
-            recentRef.current = [...recentRef.current, raw.corrected].slice(
-              -RECENT_PARAGRAPHS,
-            );
+            if (raw.outline && raw.outline !== '=') outlineRef.current = raw.outline;
+            recentNotesRef.current = raw.notes;
           } else {
             patch(item.id, { status: 'error', errorMessage: result.message });
           }
@@ -190,10 +189,10 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
     setBuffer({ text: '', count: 0 });
     if (parts.length === 0) return;
 
-    const paragraph = parts.join(' ').replace(/\s+/g, ' ').trim();
+    const chunk = parts.join(' ').replace(/\s+/g, ' ').trim();
     const id = makeId();
-    setSegments((prev) => [...prev, newSegment(id, paragraph, 'pending')]);
-    paragraphQueueRef.current.push({ id, original: paragraph });
+    setSegments((prev) => [...prev, newSegment(id, chunk, 'pending')]);
+    paragraphQueueRef.current.push({ id, original: chunk });
     void drainQueues();
   }, [drainQueues]);
 
@@ -205,8 +204,8 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
     }
     idleTimerRef.current = window.setTimeout(() => {
       idleTimerRef.current = null;
-      // Only close a paragraph on a pause if enough has piled up; otherwise wait
-      // for more sentences (or the MAX_AGE backstop / Stop).
+      // Only close a chunk on a pause if enough has piled up; otherwise wait for
+      // more sentences (or the MAX_AGE backstop / Stop).
       if (bufferRef.current.length >= IDLE_MIN_SENTENCES) flush();
     }, IDLE_MS);
     if (maxAgeTimerRef.current === null) {
@@ -231,7 +230,7 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
         void drainQueues();
         return;
       }
-      // refine — accumulate into the paragraph buffer
+      // refine — accumulate into the chunk buffer
       bufferRef.current = [...bufferRef.current, trimmed];
       setBuffer({
         text: bufferRef.current.join(' '),

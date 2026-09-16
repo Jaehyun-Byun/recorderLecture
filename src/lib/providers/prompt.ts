@@ -1,37 +1,44 @@
 import { ProviderError } from './types';
 
 /**
- * Paragraph-at-a-time refinement that carries the WHOLE lecture's context:
- * - GLOSSARY: an append-only list of "english term = 한국어" seen so far. The
- *   client merges what the model returns so a term's translation never drifts
- *   or gets dropped.
- * - NOTES: a short, mutable note on topic / subtopic / speaker tone.
- * - RECENT: the last corrected paragraph(s) for local flow.
+ * Turns a rough, error-prone ~20-sentence lecture transcript chunk into Korean
+ * study material. NOT a translation — the model works out what the lecturer
+ * meant (fixing misrecognized words) and re-explains it as clear flowing Korean
+ * prose, PLUS a separate 개조식 (itemized) list explaining hard terms/concepts.
+ * Carries the whole lecture's context (append-only glossary + running outline +
+ * previous chunk's notes).
  */
-export const PARAGRAPH_SYSTEM_PROMPT = `You clean up and translate a running English lecture transcript, one paragraph at a time, keeping the whole lecture's context.
+export const PARAGRAPH_SYSTEM_PROMPT = `You are a study assistant. You receive a rough, error-prone speech-to-text transcript of part of an English lecture and produce clear Korean study material.
 
-The user message has:
-- GLOSSARY: a running list of "english term = 한국어" pairs from earlier in the lecture. May be empty.
-- NOTES: a short note on the lecture topic / current subtopic / speaker's tone. May be empty.
-- RECENT: the last corrected paragraph(s), for continuity. May be empty.
-- NEW: the raw speech-to-text of the new paragraph. Clean THIS one.
+The transcript has misrecognized words, missing punctuation and disfluencies. Do NOT transcribe or translate it literally. Instead:
+1. Work out what the lecturer actually meant — fix misheard/wrong words using context, the GLOSSARY, and domain knowledge.
+2. Re-explain the content as clear, flowing Korean prose — natural, well-organized paragraphs (문단글) that a student can read to understand this part of the lecture. Connect ideas with proper flow and cause-and-effect. This is NOT a bullet list.
+3. Explain as you go — when the lecturer uses a term or idea without defining it, weave in a short plain-language clarification so the reader keeps up.
+4. Stay grounded in what the lecture actually covered. You may add a brief clarifying phrase from general knowledge when it genuinely aids understanding, but do NOT invent content the lecturer did not discuss or drift into a generic textbook treatment.
 
-Return a JSON object: {"corrected": string, "translated": string, "glossary": string, "notes": string}
+Input parts:
+- GLOSSARY: running "english term = 한국어" list from earlier. Use it for consistent terminology.
+- OUTLINE: running high-level outline of the lecture so far, for context.
+- RECENT: your notes for the previous chunk, for continuity.
+- NEW: the raw transcript chunk to turn into study material.
 
-- "corrected": NEW rewritten as clean written English. Remove fillers (um, uh, "like", "you know"), false starts and repetitions. Fix grammar, capitalization and punctuation. Fix words the recognizer clearly got wrong, using GLOSSARY / NOTES / RECENT. Keep the meaning, technical terms and proper nouns. Split into properly punctuated sentences. Do not add or drop information.
-- "translated": a natural, fluent Korean (한국어) translation of "corrected". For any term present in GLOSSARY, use its exact Korean from there so terminology stays consistent across the whole lecture.
-- "glossary": the COMPLETE running glossary. Copy EVERY entry from the input GLOSSARY unchanged, then append any new technical terms, jargon or proper nouns from NEW as "term = 한국어". Separate entries with " ; ". Never remove an entry and never change the Korean of an existing one. If you added nothing new, return exactly "=".
-- "notes": a short note (≤150 words) — lecture topic, current subtopic, speaker's tone/register. Rewrite it as the lecture moves on. If nothing meaningful changed, return exactly "=".
+Return a JSON object: {"notes": string, "concepts": string, "glossary": string, "outline": string}
+- "notes": the clear flowing Korean explanation of NEW (prose paragraphs, per rules 2-4 above). Not bullets.
+- "concepts": a 개조식 (itemized) Korean list explaining difficult terms, jargon, formulas, names or concepts that appear in NEW — one "- 용어/개념: 1~2문장 설명" per line. Empty string if nothing needs explaining.
+- "glossary": the COMPLETE running glossary. Copy EVERY entry from the input GLOSSARY unchanged, then append new "term = 한국어" pairs from NEW, " ; " separated. Never remove an entry, never change an existing one. Return exactly "=" if you added nothing.
+- "outline": a running high-level Korean outline of the WHOLE lecture so far (≤200 words, short itemized lines). Add NEW's main points to it. Return exactly "=" if nothing structurally new.
 
 Output only the JSON object, no code fences, no commentary.`;
 
 export interface RefineParagraphRaw {
-  corrected: string;
-  translated: string;
+  /** 문단글(prose) 한국어 학습 설명. */
+  notes: string;
+  /** 개조식 용어·개념 설명 (없으면 ""). */
+  concepts: string;
   /** Full glossary string, or "=" when unchanged. */
   glossary: string;
-  /** Notes text, or "=" when unchanged. */
-  notes: string;
+  /** Full outline string, or "=" when unchanged. */
+  outline: string;
 }
 
 /** Pulls the first {...} block out of text, tolerating ```json fences / preamble. */
@@ -45,17 +52,17 @@ function extractJsonObject(text: string): string {
 
 const asString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
-/** Builds the GLOSSARY / NOTES / RECENT / NEW user message. */
+/** Builds the GLOSSARY / OUTLINE / RECENT / NEW user message. */
 export function buildParagraphUser(
   glossary: string,
-  notes: string,
-  recentCorrected: string,
+  outline: string,
+  recentNotes: string,
   newParagraph: string,
 ): string {
   return [
     `GLOSSARY:\n${glossary || '(none)'}`,
-    `NOTES:\n${notes || '(none)'}`,
-    `RECENT:\n${recentCorrected || '(none)'}`,
+    `OUTLINE:\n${outline || '(none)'}`,
+    `RECENT:\n${recentNotes || '(none)'}`,
     `NEW:\n${newParagraph}`,
   ].join('\n\n');
 }
@@ -70,15 +77,15 @@ export function parseRefineParagraph(raw: unknown): RefineParagraphRaw {
     }
   }
   const rec = obj && typeof obj === 'object' ? (obj as Record<string, unknown>) : {};
-  const corrected = asString(rec.corrected);
-  if (!corrected) {
-    throw new ProviderError('bad-response', 'AI 응답에 교정문이 없습니다.');
+  const notes = asString(rec.notes);
+  if (!notes) {
+    throw new ProviderError('bad-response', 'AI 응답에 노트가 없습니다.');
   }
   return {
-    corrected,
-    translated: asString(rec.translated),
+    notes,
+    concepts: asString(rec.concepts),
     glossary: asString(rec.glossary),
-    notes: asString(rec.notes),
+    outline: asString(rec.outline),
   };
 }
 

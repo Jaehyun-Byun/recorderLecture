@@ -44,7 +44,7 @@ function refineErrorRetriable(reason: RefineError['reason']): boolean {
   return reason === 'network' || reason === 'timeout' || reason === 'unknown';
 }
 
-/** refine mode: one paragraph at a time, carrying rolling glossary + notes. */
+/** refine mode: one ~20-sentence chunk → Korean study notes, carrying rolling memory. */
 export async function processParagraph(
   input: RefineParagraphInput,
 ): Promise<ParagraphResult> {

@@ -1,6 +1,6 @@
 interface LiveTranscriptProps {
   interimText: string;
-  /** Sentences buffered for the next paragraph (refine mode). */
+  /** Sentences buffered for the next study-note chunk (refine mode). */
   bufferText: string;
   bufferCount: number;
   isListening: boolean;
@@ -9,8 +9,9 @@ interface LiveTranscriptProps {
 }
 
 /**
- * Below the confirmed segments: the paragraph buffer (medium gray) then the
- * current in-progress transcript (light gray). Also the empty-state hint.
+ * Below the confirmed segments: the not-yet-processed buffer (a live read-along
+ * transcript, medium gray) then the current in-progress transcript (light gray).
+ * Also the empty-state hint.
  */
 export function LiveTranscript({
   interimText,
@@ -24,7 +25,9 @@ export function LiveTranscript({
       <div className="space-y-1 leading-relaxed">
         {bufferText && (
           <p className="text-slate-500">
-            <span className="mr-1 text-xs text-slate-400">모으는 중 {bufferCount}문장</span>
+            <span className="mr-1 text-xs text-slate-400">
+              전사 {bufferCount}문장 · 노트 대기 중
+            </span>
             {bufferText}
           </p>
         )}

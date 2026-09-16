@@ -3,22 +3,28 @@
 /**
  * Processing state of one on-screen segment.
  * - `pending`    finalized, waiting its turn
- * - `processing` translation / paragraph refinement in flight
- * - `done`       `corrected` / `translated` filled in as far as the mode goes
+ * - `processing` translation / note generation in flight
+ * - `done`       output filled in as far as the mode goes
  * - `error`      failed (after a retry, if transient); `errorMessage` says why
  */
 export type SegmentStatus = 'pending' | 'processing' | 'done' | 'error';
 
 /**
- * One displayed unit of transcript. In transcribe / translate mode a segment is
- * a single sentence; in refine mode it's a paragraph (several sentences the
- * buffer flushed together). `corrected` / `translated` stay null until produced.
+ * One displayed unit of transcript.
+ * - transcribe: a sentence — only `original`.
+ * - translate:  a sentence — `original` + `translated` (browser translation).
+ * - refine:     a ~20-sentence chunk — `original` (raw, reference) plus AI study
+ *               notes: `notes` (개조식 재구성) and `concepts` (용어·개념 설명).
  */
 export interface Segment {
   id: string;
   original: string;
-  corrected: string | null;
+  /** translate mode: faithful Korean translation. */
   translated: string | null;
+  /** refine mode: 개조식 한국어 학습 노트 (발화 내용 재구성). */
+  notes: string | null;
+  /** refine mode: 개조식 어려운 용어·개념 설명 (없으면 빈 문자열). */
+  concepts: string | null;
   status: SegmentStatus;
   /** Set only when status is `error`. */
   errorMessage: string | null;

@@ -38,7 +38,7 @@ export default function App() {
       <header>
         <h1 className="text-xl font-bold text-slate-900">LectureCaption</h1>
         <p className="mt-1 text-sm text-slate-500">
-          영어 강의를 실시간으로 전사하고, 선택한 모드로 번역·교정합니다.
+          영어 강의를 전사하고, AI가 이해하기 쉬운 한국어 학습 노트로 정리합니다.
         </p>
       </header>
 

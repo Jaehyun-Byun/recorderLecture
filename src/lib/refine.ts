@@ -28,8 +28,8 @@ export class RefineError extends Error {
   }
 }
 
-const TIMEOUT_MS = 60_000; // big paragraphs — allow plenty of time
-const JSON_KEYS = ['corrected', 'translated', 'glossary', 'notes'];
+const TIMEOUT_MS = 90_000; // big chunk + generative notes — allow plenty of time
+const JSON_KEYS = ['notes', 'concepts', 'glossary', 'outline'];
 
 const KIND_TO_REASON: Record<ProviderError['kind'], RefineErrorReason> = {
   auth: 'auth',
@@ -43,16 +43,16 @@ export interface RefineParagraphInput {
   newParagraph: string;
   /** Serialized running glossary ("en = ko ; ..."), empty on the first call. */
   glossary: string;
-  /** Rolling notes on topic/tone, empty on the first call. */
-  notes: string;
-  /** The last corrected paragraph(s) joined, empty on the first call. */
-  recentCorrected: string;
+  /** Running lecture outline, empty on the first call. */
+  outline: string;
+  /** The previous chunk's notes, empty on the first call. */
+  recentNotes: string;
   settings: Settings;
 }
 
-/** Output tokens track input size — Korean is heavy, so ~1.5x chars, clamped. */
+/** Output can be large (notes + concepts + glossary + outline) — scale generously. */
 function maxTokensFor(chars: number): number {
-  return Math.min(6144, Math.max(1024, Math.ceil(chars * 1.6)));
+  return Math.min(8192, Math.max(1536, Math.ceil(chars * 2)));
 }
 
 export async function refineParagraph(
@@ -68,8 +68,8 @@ export async function refineParagraph(
 
   const user = buildParagraphUser(
     input.glossary,
-    input.notes,
-    input.recentCorrected,
+    input.outline,
+    input.recentNotes,
     input.newParagraph,
   );
   const maxTokens = maxTokensFor(user.length);
@@ -112,8 +112,8 @@ export async function testConnection(
     await refineParagraph({
       newParagraph: 'so um this is a quick connection test you know',
       glossary: '',
-      notes: '',
-      recentCorrected: '',
+      outline: '',
+      recentNotes: '',
       settings,
     });
     return { ok: true };

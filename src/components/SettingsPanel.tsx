@@ -16,16 +16,16 @@ interface SettingsPanelProps {
 
 const MODE_LABEL: Record<AppMode, string> = {
   transcribe: '전사',
-  translate: '번역',
-  refine: 'AI 교정 (고급)',
+  translate: '실시간 번역',
+  refine: 'AI 강의 노트 (고급)',
 };
 
 const MODE_DESC: Record<AppMode, string> = {
   transcribe: '음성을 텍스트로만 옮깁니다. API 키가 필요 없습니다.',
   translate:
-    '전사 + 한국어 번역. 브라우저 내장 번역(무료, 오프라인)을 씁니다. API 키가 필요 없습니다.',
+    '전사 + 문장별 한국어 번역. 브라우저 내장 번역(무료, 오프라인). API 키가 필요 없습니다.',
   refine:
-    '전사 + AI 문장 교정(filler 제거·문법 정리) + AI 번역. 선택한 제공자의 API 키가 필요합니다.',
+    '약 20문장씩 모아, 전사 오류를 바로잡고 발화 내용을 이해하기 쉬운 한국어 설명글로 재구성 + 어려운 용어·개념은 개조식으로 정리. 결과는 몇 분 지연돼 나옵니다(실시간 자막 아님). 선택한 제공자의 API 키가 필요합니다.',
 };
 
 function TranslatorStatusRow({
