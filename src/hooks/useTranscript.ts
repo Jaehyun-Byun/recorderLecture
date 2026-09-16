@@ -15,12 +15,16 @@ import type { Segment } from '../types';
  * - translate:  each sentence → one segment → browser translation (per sentence).
  * - refine:     sentences accumulate in a buffer; a 3-minute timer (started by
  *               the first sentence after a flush) decides when to close the
- *               chunk — time-based, not sentence-count-based — plus "Stop"
- *               flushes immediately. The chunk becomes ONE segment that the LLM
- *               turns into Korean study notes. Chunks are processed
- *               **sequentially**, each carrying rolling lecture memory: an
- *               append-only glossary (merged client-side so terms never drift),
- *               a running outline, and the previous chunk's notes.
+ *               chunk — time-based, not sentence-count-based. But a chunk that's
+ *               too thin at the 3-minute mark (the speaker was mostly quiet)
+ *               keeps accumulating instead of being cut short — it re-checks
+ *               periodically and only forces a flush once a hard time cap is
+ *               hit. "Stop" always flushes immediately regardless. The chunk
+ *               becomes ONE segment that the LLM turns into Korean study notes.
+ *               Chunks are processed **sequentially**, each carrying rolling
+ *               lecture memory: an append-only glossary (merged client-side so
+ *               terms never drift), a running outline, and the previous chunk's
+ *               notes.
  */
 export interface UseTranscriptResult {
   segments: Segment[];
@@ -34,8 +38,14 @@ export interface UseTranscriptResult {
 }
 
 // Close a chunk every 3 minutes of accumulated speech — time-based, regardless
-// of how many sentences that turns out to be.
+// of how many sentences that turns out to be. But don't cut a too-thin chunk
+// (the speaker was mostly quiet): below MIN_SENTENCES_TO_FLUSH, keep listening
+// and re-check every EXTEND_CHECK_MS, until MAX_WINDOW_MS forces a flush anyway
+// so a very sparse stretch still surfaces notes eventually.
 const CHUNK_INTERVAL_MS = 180_000;
+const MIN_SENTENCES_TO_FLUSH = 5;
+const EXTEND_CHECK_MS = 30_000;
+const MAX_WINDOW_MS = 600_000;
 const MAX_GLOSSARY_TERMS = 80;
 const GENERIC_ERROR = '처리에 실패했습니다.';
 
@@ -95,6 +105,8 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
   });
   const bufferRef = useRef<string[]>([]);
   const chunkTimerRef = useRef<number | null>(null);
+  /** When the current buffering window's first sentence arrived. */
+  const windowStartedAtRef = useRef(0);
 
   const sentenceQueueRef = useRef<SentenceItem[]>([]);
   const paragraphQueueRef = useRef<ParagraphItem[]>([]);
@@ -190,13 +202,30 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
     void drainQueues();
   }, [drainQueues]);
 
+  /** Fires when the 3-minute clock (or an extension) elapses. */
+  const checkChunkTimer = useCallback(() => {
+    chunkTimerRef.current = null;
+    const count = bufferRef.current.length;
+    if (count === 0) return; // nothing buffered — next enqueue starts a fresh window
+
+    const windowAge = Date.now() - windowStartedAtRef.current;
+    if (count >= MIN_SENTENCES_TO_FLUSH || windowAge >= MAX_WINDOW_MS) {
+      flush();
+    } else {
+      // Too little spoken yet — don't cut a thin chunk short. Keep listening
+      // and check again soon (MAX_WINDOW_MS is the backstop).
+      chunkTimerRef.current = window.setTimeout(checkChunkTimer, EXTEND_CHECK_MS);
+    }
+  }, [flush]);
+
   const scheduleFlush = useCallback(() => {
     // The first sentence after a flush starts the 3-minute clock; later
     // sentences in the same window just accumulate until it fires.
     if (chunkTimerRef.current === null) {
-      chunkTimerRef.current = window.setTimeout(flush, CHUNK_INTERVAL_MS);
+      windowStartedAtRef.current = Date.now();
+      chunkTimerRef.current = window.setTimeout(checkChunkTimer, CHUNK_INTERVAL_MS);
     }
-  }, [flush]);
+  }, [checkChunkTimer]);
 
   const enqueue = useCallback(
     (text: string) => {
