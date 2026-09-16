@@ -174,6 +174,8 @@ src/
 
 - 컴포넌트 PascalCase / 함수·변수 camelCase / 훅 `use*`. `any` 금지, 타입 명시. 주석은 "왜"만.
 - Conventional Commits. 파일 300줄 초과 시 분리. 새 의존성은 사전 승인.
+- **코드를 수정하면 매번 자동으로 git commit + push한다** (2026-09-16 사용자 승인, 매번 다시 물어보지 않음).
+  Vercel이 GitHub `main`에 연결돼 있어 push하면 자동 재배포됨.
 
 ## 실행
 
