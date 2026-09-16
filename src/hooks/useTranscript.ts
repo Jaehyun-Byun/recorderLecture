@@ -13,11 +13,13 @@ import type { Segment } from '../types';
  *
  * - transcribe: each finalized sentence → a `done` segment immediately.
  * - translate:  each sentence → one segment → browser translation (per sentence).
- * - refine:     sentences accumulate in a buffer; the buffer flushes into ONE
- *               chunk segment (~20 sentences: 20 / 8s idle once >=15 / 3min max /
- *               stop) that the LLM turns into Korean study notes. Chunks are
- *               processed **sequentially**, each carrying rolling lecture memory:
- *               an append-only glossary (merged client-side so terms never drift),
+ * - refine:     sentences accumulate in a buffer; a 3-minute timer (started by
+ *               the first sentence after a flush) decides when to close the
+ *               chunk — time-based, not sentence-count-based — plus "Stop"
+ *               flushes immediately. The chunk becomes ONE segment that the LLM
+ *               turns into Korean study notes. Chunks are processed
+ *               **sequentially**, each carrying rolling lecture memory: an
+ *               append-only glossary (merged client-side so terms never drift),
  *               a running outline, and the previous chunk's notes.
  */
 export interface UseTranscriptResult {
@@ -31,12 +33,9 @@ export interface UseTranscriptResult {
   finalize: () => void;
 }
 
-// Aim for a substantial chunk: ~20 sentences. Flush at 20, or on a pause once we
-// already have at least 15, or after a hard time cap for slow speakers.
-const MAX_SENTENCES = 20;
-const IDLE_MS = 8_000;
-const IDLE_MIN_SENTENCES = 15;
-const MAX_AGE_MS = 180_000;
+// Close a chunk every 3 minutes of accumulated speech — time-based, regardless
+// of how many sentences that turns out to be.
+const CHUNK_INTERVAL_MS = 180_000;
 const MAX_GLOSSARY_TERMS = 80;
 const GENERIC_ERROR = '처리에 실패했습니다.';
 
@@ -95,8 +94,7 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
     count: 0,
   });
   const bufferRef = useRef<string[]>([]);
-  const idleTimerRef = useRef<number | null>(null);
-  const maxAgeTimerRef = useRef<number | null>(null);
+  const chunkTimerRef = useRef<number | null>(null);
 
   const sentenceQueueRef = useRef<SentenceItem[]>([]);
   const paragraphQueueRef = useRef<ParagraphItem[]>([]);
@@ -176,13 +174,9 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
   }, [patch]);
 
   const flush = useCallback(() => {
-    if (idleTimerRef.current !== null) {
-      window.clearTimeout(idleTimerRef.current);
-      idleTimerRef.current = null;
-    }
-    if (maxAgeTimerRef.current !== null) {
-      window.clearTimeout(maxAgeTimerRef.current);
-      maxAgeTimerRef.current = null;
+    if (chunkTimerRef.current !== null) {
+      window.clearTimeout(chunkTimerRef.current);
+      chunkTimerRef.current = null;
     }
     const parts = bufferRef.current;
     bufferRef.current = [];
@@ -197,19 +191,10 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
   }, [drainQueues]);
 
   const scheduleFlush = useCallback(() => {
-    if (idleTimerRef.current !== null) window.clearTimeout(idleTimerRef.current);
-    if (bufferRef.current.length >= MAX_SENTENCES) {
-      flush();
-      return;
-    }
-    idleTimerRef.current = window.setTimeout(() => {
-      idleTimerRef.current = null;
-      // Only close a chunk on a pause if enough has piled up; otherwise wait for
-      // more sentences (or the MAX_AGE backstop / Stop).
-      if (bufferRef.current.length >= IDLE_MIN_SENTENCES) flush();
-    }, IDLE_MS);
-    if (maxAgeTimerRef.current === null) {
-      maxAgeTimerRef.current = window.setTimeout(flush, MAX_AGE_MS);
+    // The first sentence after a flush starts the 3-minute clock; later
+    // sentences in the same window just accumulate until it fires.
+    if (chunkTimerRef.current === null) {
+      chunkTimerRef.current = window.setTimeout(flush, CHUNK_INTERVAL_MS);
     }
   }, [flush]);
 
@@ -273,8 +258,7 @@ export function useTranscript(settings: Settings): UseTranscriptResult {
 
   useEffect(
     () => () => {
-      if (idleTimerRef.current !== null) window.clearTimeout(idleTimerRef.current);
-      if (maxAgeTimerRef.current !== null) window.clearTimeout(maxAgeTimerRef.current);
+      if (chunkTimerRef.current !== null) window.clearTimeout(chunkTimerRef.current);
     },
     [],
   );
